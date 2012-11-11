@@ -130,7 +130,13 @@ def freeze(dist):
                     copy_to_bootstrap_env(os.path.join(dynload,nm))
         copy_to_bootstrap_env("Contents/Resources/__error__.sh")
         copy_to_bootstrap_env("Contents/Resources/__boot__.py")
-        copy_to_bootstrap_env("Contents/Resources/site.pyc")
+        #  If the app is built with an optimization level > 0
+        #  site.pyo will exist instead of site.pyc
+        optimize_enabled = options.get('optimize', 0)
+        if optimize_enabled == 0:
+            copy_to_bootstrap_env("Contents/Resources/site.pyc")
+        else:
+            copy_to_bootstrap_env("Contents/Resources/site.pyo")
         #  Copy the bootstrapping code into the __boot__.py file.
         bsdir = dist.bootstrap_dir
         with open(bsdir+"/Contents/Resources/__boot__.py","wt") as f:
@@ -175,8 +181,7 @@ def _make_py2app_cmd(dist_dir,distribution,options,exe):
     for (nm,val) in options.iteritems():
         setattr(cmd,nm,val)
     cmd.dist_dir = dist_dir
-    cmd.app = [Target(script=exe.script,dest_base=exe.name,
-                      prescripts=[StringIO(_EXE_PRESCRIPT_CODE)])]
+    cmd.app = [Target(script=exe.script,dest_base=exe.name)]
     cmd.finalize_options()
     cmd.plist["CFBundleExecutable"] = exe.name
     old_run = cmd.run
